@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('sender_id')->constrained('users');
             $table->foreignId('receiver_id')->constrained('users');
             $table->text('content'); // Pesan akan disimpan di sini
+            $table->string('type')->default('text'); // Menambah kolom tipe pesan
+            $table->string('file_path')->nullable();   // Menambah kolom lokasi file
             $table->timestamps();
         });
     }
