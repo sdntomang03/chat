@@ -449,9 +449,8 @@
             <div class="bubble {{ $msg->sender_id === Auth::id() ? 'me' : 'other' }}">
 
                 {{-- Foto --}}
-                @if($msg->type === 'image' && $msg->image_path)
-                <img class="bubble-img" src="{{ asset('storage/' . $msg->image_path) }}" alt="foto"
-                    onclick="openLightbox(this.src)">
+                @if($msg->file_path)
+                <img class="bubble-img" src="{{ $msg->file_path }}" alt="foto" onclick="openLightbox(this.src)">
                 @endif
 
                 {{-- Teks --}}
