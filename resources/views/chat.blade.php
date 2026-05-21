@@ -680,7 +680,7 @@
         /* ═══ Terima pesan via WebSocket (Reverb) ═══ */
        window.Echo.private(`chat.${authId}`)
             .listen('.MessageSent', (e) => {
-                console.log("Pesan dari Pusher:", e);
+
 
                 // Gunakan == (dua sama dengan) atau parseInt agar String "4" dianggap sama dengan Angka 4
                 if(parseInt(e.sender_id) == parseInt(receiverId)) {
