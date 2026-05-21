@@ -678,14 +678,13 @@
         });
 
         /* ═══ Terima pesan via WebSocket (Reverb) ═══ */
-        window.Echo.private(`chat.${authId}`)
-            .listen('MessageSent', e => {
-                if (e.sender_id === receiverId) {
-                    appendMessage({
-                        content:  e.content  ?? null,
-                        imageUrl: e.image_url ?? null,
-                        isSender: false,
-                    });
+       window.Echo.private(`chat.${authId}`)
+            .listen('.MessageSent', (e) => {
+                console.log("Pesan dari Pusher:", e);
+
+                // Gunakan == (dua sama dengan) atau parseInt agar String "4" dianggap sama dengan Angka 4
+                if(parseInt(e.sender_id) == parseInt(receiverId)) {
+                    appendMessage(e, false);
                 }
             });
     </script>
