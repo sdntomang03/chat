@@ -22,6 +22,7 @@ class ChatController extends Controller
         // Jika kunci rahasia sudah terbuka, tampilkan daftar kontak
         if ($request->session()->get('kontak_terbuka') === true) {
             $users = User::where('id', '!=', Auth::id())->get();
+            dd($users);
 
             return view('contacts', compact('users'));
         }
