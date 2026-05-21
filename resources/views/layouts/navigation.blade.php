@@ -96,6 +96,9 @@
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('chat.contacts')">
+                    {{ __('Latihan') }}
+                </x-responsive-nav-link>
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
