@@ -9,6 +9,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log; // Wajib ditambahkan untuk menangkap log error
 
 class ChatController extends Controller
 {
@@ -16,7 +17,6 @@ class ChatController extends Controller
     // 1. HALAMAN DAFTAR KONTAK & KAMUFLASE BERHITUNG
     // ==========================================
 
-    // METHOD INI HANYA BOLEH ADA SATU DI DALAM CLASS INI
     public function contacts(Request $request)
     {
         // Jika kunci rahasia sudah terbuka, tampilkan daftar kontak
@@ -37,12 +37,10 @@ class ChatController extends Controller
         return view('contacts', compact('angka1', 'angka2'));
     }
 
-    // Method untuk memeriksa jawaban dari form kuis
     public function unlockContacts(Request $request)
     {
         $request->validate(['jawaban' => 'required|numeric']);
 
-        // Ambil angka kuis dari memori session server
         $angka1 = $request->session()->get('puzzle_angka1');
         $angka2 = $request->session()->get('puzzle_angka2');
 
@@ -84,10 +82,14 @@ class ChatController extends Controller
     // 2. LOGIKA RUANG CHAT & BROADCAST
     // ==========================================
 
-    public function index($token)
+    public function index(Request $request, $token)
     {
+        // KEAMANAN TAMBAHAN: Cegah Akses Langsung bypass URL
+        if ($request->session()->get('kontak_terbuka') !== true) {
+            return redirect()->route('chat.contacts');
+        }
+
         try {
-            // Dekripsi token URL menjadi ID angka asli
             $receiverId = Crypt::decryptString($token);
             $receiver = User::findOrFail($receiverId);
         } catch (DecryptException $e) {
@@ -108,7 +110,10 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request, $token)
     {
-        $request->validate(['content' => 'required|string']);
+        // KEAMANAN TAMBAHAN: Cegah pengiriman pesan ilegal
+        if ($request->session()->get('kontak_terbuka') !== true) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
 
         try {
             $receiverId = Crypt::decryptString($token);
@@ -117,15 +122,36 @@ class ChatController extends Controller
             return response()->json(['error' => 'Invalid token'], 403);
         }
 
-        // Simpan pesan ke DB (otomatis terenkripsi At-Rest lewat $casts di Model)
+        $type = 'text';
+        $filePath = null;
+        $content = $request->content;
+
+        // Cek apakah ada file gambar yang diunggah
+        if ($request->hasFile('image')) {
+            $request->validate(['image' => 'image|max:2048']); // Max 2MB
+            $path = $request->file('image')->store('chat_images', 'public');
+            $type = 'image';
+            $filePath = '/storage/'.$path;
+        } else {
+            // Jika tidak ada gambar, konten teks wajib diisi
+            $request->validate(['content' => 'required|string']);
+        }
+
+        // Simpan pesan ke DB
         $message = Message::create([
             'sender_id' => Auth::id(),
             'receiver_id' => $receiver->id,
-            'content' => $request->content,
+            'type' => $type,
+            'content' => $content,
+            'file_path' => $filePath,
         ]);
 
-        // Pancarkan event real-time ke Reverb via PrivateChannel
-        broadcast(new MessageSent($message))->toOthers();
+        // Pancarkan event real-time ke Pusher (dibungkus Try-Catch agar tidak Error 500)
+        try {
+            broadcast(new MessageSent($message))->toOthers();
+        } catch (\Exception $e) {
+            Log::error('Gagal Broadcast ke Pusher: '.$e->getMessage());
+        }
 
         return response()->json([
             'status' => 'success',
