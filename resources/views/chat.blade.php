@@ -554,8 +554,12 @@
             const side   = isSender ? 'me' : 'other';
             const checks = isSender ? '<span class="checks">&#10003;&#10003;</span>' : '';
             let inner = '';
+
+            // Tambahkan gambar jika ada
             if (imageUrl) inner += `<img class="bubble-img" src="${imageUrl}" alt="foto" onclick="openLightbox(this.src)">`;
-            if (content)  inner += `<span>${esc(content)}</span>`;
+
+            // Tambahkan teks jika ada
+            if (content && content !== '📷 Mengirim Foto') inner += `<span>${esc(content)}</span>`;
 
             const row = document.createElement('div');
             row.className = `bubble-row ${side}`;
@@ -580,8 +584,16 @@
             inputEl.value = '';
             closeEmoji();
 
-            window.axios.post(`/cbt/${chatToken}`, { content })
-                .catch(() => alert('Gagal mengirim pesan. Silakan refresh.'));
+            // Ganti axios dengan Fetch API
+            fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            }).catch(() => alert('Gagal mengirim pesan. Silakan refresh.'));
         }
 
         /* ═══ File / Foto ═══ */
@@ -607,6 +619,7 @@
         });
 
         document.getElementById('preview-cancel').addEventListener('click', cancelImage);
+
         function cancelImage() {
             selectedFile = null;
             fileInput.value = '';
@@ -616,16 +629,35 @@
         function sendImage() {
             const fd = new FormData();
             fd.append('image', selectedFile);
+
+            // Izinkan mengirim teks/caption bersamaan dengan gambar
+            const content = inputEl.value.trim();
+            if (content) {
+                fd.append('content', content);
+            } else {
+                fd.append('content', '📷 Mengirim Foto'); // Teks default backend jika kosong
+            }
+
             const localSrc = document.getElementById('preview-thumb').src;
             cancelImage();
-            appendMessage({ imageUrl: localSrc, isSender: true });
+            appendMessage({ content, imageUrl: localSrc, isSender: true });
 
-            window.axios.post(`/cbt/${chatToken}/image`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            inputEl.value = '';
+            closeEmoji();
+
+            // Ganti axios dengan Fetch API
+            fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: fd
             }).catch(() => alert('Gagal mengirim foto.'));
         }
 
         /* ═══ Emoji Picker ═══ */
+        // (Logika Emoji Anda sudah sempurna, tidak perlu diubah)
         const EMOJIS = {
             'Smiley': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳'],
             'Gestur': ['👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','🖐️','✋','🖖','🤏','💪','🙌','👐','🤲','🙏','🤝','✍️'],
@@ -670,6 +702,7 @@
         sendBtn.addEventListener('click', () => {
             if (selectedFile) sendImage(); else sendText();
         });
+
         inputEl.addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -677,14 +710,16 @@
             }
         });
 
-        /* ═══ Terima pesan via WebSocket (Reverb) ═══ */
-       window.Echo.private(`chat.${authId}`)
+        /* ═══ Terima pesan via WebSocket (Pusher) ═══ */
+        window.Echo.private(`chat.${authId}`)
             .listen('.MessageSent', (e) => {
-
-
-                // Gunakan == (dua sama dengan) atau parseInt agar String "4" dianggap sama dengan Angka 4
                 if(parseInt(e.sender_id) == parseInt(receiverId)) {
-                    appendMessage(e, false);
+                    // PENGUBAHAN PENTING: Petakan data Pusher (e.file_path) ke format UI Anda (imageUrl)
+                    appendMessage({
+                        content: e.content,
+                        imageUrl: e.file_path,
+                        isSender: false
+                    });
                 }
             });
     </script>
