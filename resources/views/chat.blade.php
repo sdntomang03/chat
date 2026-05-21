@@ -580,7 +580,7 @@
             inputEl.value = '';
             closeEmoji();
 
-            window.axios.post(`/chat/${chatToken}`, { content })
+            window.axios.post(`/cbt/${chatToken}`, { content })
                 .catch(() => alert('Gagal mengirim pesan. Silakan refresh.'));
         }
 
@@ -620,7 +620,7 @@
             cancelImage();
             appendMessage({ imageUrl: localSrc, isSender: true });
 
-            window.axios.post(`/chat/${chatToken}/image`, fd, {
+            window.axios.post(`/cbt/${chatToken}/image`, fd, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             }).catch(() => alert('Gagal mengirim foto.'));
         }
