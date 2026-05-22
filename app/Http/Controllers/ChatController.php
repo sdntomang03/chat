@@ -85,7 +85,6 @@ class ChatController extends Controller
 
     public function index(Request $request, $token)
     {
-        // KEAMANAN TAMBAHAN: Cegah Akses Langsung bypass URL
         if ($request->session()->get('kontak_terbuka') !== true) {
             return redirect()->route('chat.contacts');
         }
@@ -98,15 +97,35 @@ class ChatController extends Controller
         }
 
         $authId = Auth::id();
+        $perPage = 50;
+        $page = (int) $request->query('page', 1);
 
-        // Ambil riwayat percakapan
-        $messages = Message::where(function ($query) use ($authId, $receiver) {
-            $query->where('sender_id', $authId)->where('receiver_id', $receiver->id);
-        })->orWhere(function ($query) use ($authId, $receiver) {
-            $query->where('sender_id', $receiver->id)->where('receiver_id', $authId);
-        })->orderBy('created_at', 'asc')->get();
+        $query = Message::where(function ($q) use ($authId, $receiver) {
+            $q->where('sender_id', $authId)->where('receiver_id', $receiver->id);
+        })->orWhere(function ($q) use ($authId, $receiver) {
+            $q->where('sender_id', $receiver->id)->where('receiver_id', $authId);
+        })->orderBy('created_at', 'desc'); // desc dulu, nanti di-reverse di view
 
-        return view('chat', compact('receiver', 'messages', 'token'));
+        $total = $query->count();
+        $messages = $query->skip(($page - 1) * $perPage)->take($perPage)->get()->reverse()->values();
+        $hasMore = ($page * $perPage) < $total;
+
+        // Kalau request AJAX (load more), return JSON
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'messages' => $messages->map(fn ($m) => [
+                    'id' => $m->id,
+                    'content' => $m->content,
+                    'file_path' => $m->file_path,
+                    'sender_id' => $m->sender_id,
+                    'created_at' => $m->created_at->setTimezone('Asia/Jakarta')->format('H:i'),
+                ]),
+                'has_more' => $hasMore,
+                'next_page' => $page + 1,
+            ]);
+        }
+
+        return view('chat', compact('receiver', 'messages', 'token', 'hasMore'));
     }
 
     public function sendMessage(Request $request, $token)

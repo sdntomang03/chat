@@ -439,38 +439,52 @@
     </div>
 
     {{-- ══ Pesan ══ --}}
+    {{-- ══ Pesan ══ --}}
     <div id="chat-box">
+
+        {{-- Tombol Load More (muncul di atas jika masih ada pesan) --}}
+        @if($hasMore)
+        <div id="load-more-wrapper" style="text-align:center; padding: 10px 0;">
+            <button id="load-more-btn" style="background:#2a3942; color:#8696a0; border:none; border-radius:16px;
+                   padding:6px 18px; font-size:12px; cursor:pointer;">
+                ⟳ Memuat pesan sebelumnya...
+            </button>
+        </div>
+        @endif
+
         <div class="date-chip">
             <span>{{ now()->translatedFormat('d F Y') }}</span>
         </div>
 
-        @foreach($messages as $msg)
-        <div class="bubble-row {{ $msg->sender_id === Auth::id() ? 'me' : 'other' }}">
-            <div class="bubble {{ $msg->sender_id === Auth::id() ? 'me' : 'other' }}">
+        {{-- Container pesan lama (prepend ke sini) --}}
+        <div id="old-messages"></div>
 
-                {{-- Foto --}}
-                @if($msg->file_path)
-                <img class="bubble-img" src="{{ $msg->file_path }}" alt="foto" onclick="openLightbox(this.src)">
-                @endif
-
-                {{-- Teks --}}
-                @if($msg->content)
-                <span>{{ $msg->content }}</span>
-                @endif
-
-                {{-- ✅ WAKTU — selalu tampil di baris footer, tidak tertutupi teks --}}
-                <div class="bubble-footer">
-                    <span class="bubble-time">
-                        {{ $msg->created_at->setTimezone('Asia/Jakarta')->format('H:i') }}
-                    </span>
-                    @if($msg->sender_id === Auth::id())
-                    <span class="checks">&#10003;&#10003;</span>
+        {{-- Pesan awal dari server --}}
+        <div id="initial-messages">
+            @foreach($messages as $msg)
+            <div class="bubble-row {{ $msg->sender_id === Auth::id() ? 'me' : 'other' }}">
+                <div class="bubble {{ $msg->sender_id === Auth::id() ? 'me' : 'other' }}">
+                    @if($msg->file_path)
+                    <img class="bubble-img" src="{{ $msg->file_path }}" alt="foto" onclick="openLightbox(this.src)">
                     @endif
+                    @if($msg->content)
+                    <span>{{ $msg->content }}</span>
+                    @endif
+                    <div class="bubble-footer">
+                        <span class="bubble-time">
+                            {{ $msg->created_at->setTimezone('Asia/Jakarta')->format('H:i') }}
+                        </span>
+                        @if($msg->sender_id === Auth::id())
+                        <span class="checks">&#10003;&#10003;</span>
+                        @endif
+                    </div>
                 </div>
-
             </div>
+            @endforeach
         </div>
-        @endforeach
+
+        {{-- Pesan baru masuk (append ke sini) --}}
+        <div id="new-messages"></div>
     </div>
 
     {{-- ══ Preview Gambar ══ --}}
@@ -507,220 +521,274 @@
     </div>
 
     <script type="module">
-        /* ═══ Variabel dari Controller ═══ */
         const chatToken  = '{{ $token }}';
-        const receiverId = {{ $receiver->id }};
-        const authId     = {{ Auth::id() }};
+    const receiverId = {{ $receiver->id }};
+    const authId     = {{ Auth::id() }};
+    const baseUrl    = window.location.pathname;
 
-        const chatBox      = document.getElementById('chat-box');
-        const inputEl      = document.getElementById('message-input');
-        const sendBtn      = document.getElementById('send-btn');
-        const fileInput    = document.getElementById('file-input');
-        const attachBtn    = document.getElementById('attach-btn');
-        const emojiToggle  = document.getElementById('emoji-toggle-btn');
-        const emojiPicker  = document.getElementById('emoji-picker');
-        const previewBar   = document.getElementById('preview-bar');
+    const chatBox       = document.getElementById('chat-box');
+    const inputEl       = document.getElementById('message-input');
+    const sendBtn       = document.getElementById('send-btn');
+    const fileInput     = document.getElementById('file-input');
+    const attachBtn     = document.getElementById('attach-btn');
+    const emojiToggle   = document.getElementById('emoji-toggle-btn');
+    const emojiPicker   = document.getElementById('emoji-picker');
+    const previewBar    = document.getElementById('preview-bar');
+    const oldMessages   = document.getElementById('old-messages');
+    const newMessages   = document.getElementById('new-messages');
+    const loadMoreBtn   = document.getElementById('load-more-btn');
+    const loadMoreWrap  = document.getElementById('load-more-wrapper');
 
-        let selectedFile = null;
+    let selectedFile = null;
+    let currentPage  = 2;          // halaman 1 sudah di-render server
+    let isLoading    = false;
+    let noMorePages  = {{ $hasMore ? 'false' : 'true' }};
 
-        /* ── Scroll ke bawah saat load ── */
-        chatBox.scrollTop = chatBox.scrollHeight;
+    /* ── Scroll ke bawah saat load ── */
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-        /* ── Format waktu WIB ── */
-        function nowStr() {
-            return new Date().toLocaleTimeString('id-ID', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Jakarta'
-            });
+    /* ══ Load More via Scroll ke Atas ══ */
+    chatBox.addEventListener('scroll', () => {
+        // Trigger ketika user scroll ke atas mendekati 80px dari puncak
+        if (chatBox.scrollTop < 80 && !isLoading && !noMorePages) {
+            loadOlderMessages();
         }
+    });
 
-        /* ── Format bytes ── */
-        function fmtBytes(b) {
-            return b < 1048576
-                ? (b / 1024).toFixed(1) + ' KB'
-                : (b / 1048576).toFixed(1) + ' MB';
-        }
-
-        /* ── Escape HTML ── */
-        function esc(s) {
-            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
-        /* ── Tambah bubble ── */
-        function appendMessage({ content, imageUrl, isSender }) {
-            const side   = isSender ? 'me' : 'other';
-            const checks = isSender ? '<span class="checks">&#10003;&#10003;</span>' : '';
-            let inner = '';
-
-            // Tambahkan gambar jika ada
-            if (imageUrl) inner += `<img class="bubble-img" src="${imageUrl}" alt="foto" onclick="openLightbox(this.src)">`;
-
-            // Tambahkan teks jika ada
-            if (content && content !== '📷 Mengirim Foto') inner += `<span>${esc(content)}</span>`;
-
-            const row = document.createElement('div');
-            row.className = `bubble-row ${side}`;
-            row.innerHTML = `
-                <div class="bubble ${side}">
-                    ${inner}
-                    <div class="bubble-footer">
-                        <span class="bubble-time">${nowStr()}</span>
-                        ${checks}
-                    </div>
-                </div>`;
-            chatBox.appendChild(row);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        /* ═══ Kirim teks ═══ */
-        function sendText() {
-            const content = inputEl.value.trim();
-            if (!content) return;
-
-            appendMessage({ content, isSender: true }); // Optimistic UI
-            inputEl.value = '';
-            closeEmoji();
-
-            // Ganti axios dengan Fetch API
-            fetch(window.location.pathname, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ content })
-            }).catch(() => alert('Gagal mengirim pesan. Silakan refresh.'));
-        }
-
-        /* ═══ File / Foto ═══ */
-        attachBtn.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', function () {
-            const f = this.files[0];
-            if (!f) return;
-            if (f.size > 5 * 1024 * 1024) {
-                alert('Ukuran foto maksimal 5MB.');
-                this.value = '';
-                return;
-            }
-            selectedFile = f;
-            const rd = new FileReader();
-            rd.onload = e => {
-                document.getElementById('preview-thumb').src = e.target.result;
-                document.getElementById('preview-name').textContent = f.name;
-                document.getElementById('preview-size').textContent = fmtBytes(f.size);
-                previewBar.classList.add('show');
-            };
-            rd.readAsDataURL(f);
+    // Tombol manual (fallback)
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            if (!isLoading && !noMorePages) loadOlderMessages();
         });
+    }
 
-        document.getElementById('preview-cancel').addEventListener('click', cancelImage);
+    async function loadOlderMessages() {
+        isLoading = true;
+        if (loadMoreBtn) loadMoreBtn.textContent = '⏳ Memuat...';
 
-        function cancelImage() {
-            selectedFile = null;
-            fileInput.value = '';
-            previewBar.classList.remove('show');
-        }
+        // Simpan posisi scroll sekarang supaya tidak melompat
+        const prevScrollHeight = chatBox.scrollHeight;
 
-        function sendImage() {
-            const fd = new FormData();
-            fd.append('image', selectedFile);
+        try {
+            const res = await fetch(`${baseUrl}?page=${currentPage}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
 
-            // Izinkan mengirim teks/caption bersamaan dengan gambar
-            const content = inputEl.value.trim();
-            if (content) {
-                fd.append('content', content);
-            } else {
-                fd.append('content', '📷 Mengirim Foto'); // Teks default backend jika kosong
-            }
-
-            const localSrc = document.getElementById('preview-thumb').src;
-            cancelImage();
-            appendMessage({ content, imageUrl: localSrc, isSender: true });
-
-            inputEl.value = '';
-            closeEmoji();
-
-            // Ganti axios dengan Fetch API
-            fetch(window.location.pathname, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                body: fd
-            }).catch(() => alert('Gagal mengirim foto.'));
-        }
-
-        /* ═══ Emoji Picker ═══ */
-        // (Logika Emoji Anda sudah sempurna, tidak perlu diubah)
-        const EMOJIS = {
-            'Smiley': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳'],
-            'Gestur': ['👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','🖐️','✋','🖖','🤏','💪','🙌','👐','🤲','🙏','🤝','✍️'],
-            'Hati':   ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💋','💌'],
-            'Objek':  ['🎉','🎊','🎈','🎁','🔥','✨','⭐','🌟','💫','🌈','☀️','🌙','⚡','❄️','🌊','🍕','🍔','🍜','☕','🎵','🎶','📱','💻','📷','🚗','✈️','🏠','💰','🎮'],
-        };
-
-        (function buildEmojiPicker() {
-            for (const [cat, emojis] of Object.entries(EMOJIS)) {
-                const label = document.createElement('div');
-                label.className = 'ep-category';
-                label.textContent = cat;
-                emojiPicker.appendChild(label);
-                emojis.forEach(em => {
-                    const btn = document.createElement('button');
-                    btn.className = 'emoji-btn';
-                    btn.textContent = em;
-                    btn.type = 'button';
-                    btn.addEventListener('click', () => {
-                        const pos = inputEl.selectionStart ?? inputEl.value.length;
-                        const val = inputEl.value;
-                        inputEl.value = val.slice(0, pos) + em + val.slice(pos);
-                        inputEl.focus();
-                        const newPos = pos + [...em].length;
-                        inputEl.setSelectionRange(newPos, newPos);
-                    });
-                    emojiPicker.appendChild(btn);
+            if (data.messages.length > 0) {
+                // Prepend pesan lama ke #old-messages (paling atas)
+                const fragment = document.createDocumentFragment();
+                data.messages.forEach(msg => {
+                    fragment.appendChild(buildBubble(msg));
                 });
+                oldMessages.prepend(fragment);
+
+                // Pertahankan posisi scroll (tidak loncat ke atas)
+                chatBox.scrollTop = chatBox.scrollHeight - prevScrollHeight;
+                currentPage++;
             }
-        })();
 
-        emojiToggle.addEventListener('click', e => {
-            e.stopPropagation();
-            emojiPicker.classList.toggle('show');
-        });
-        function closeEmoji() { emojiPicker.classList.remove('show'); }
-        document.addEventListener('click', e => {
-            if (!emojiPicker.contains(e.target) && e.target !== emojiToggle) closeEmoji();
-        });
-
-        /* ═══ Tombol Kirim ═══ */
-        sendBtn.addEventListener('click', () => {
-            if (selectedFile) sendImage(); else sendText();
-        });
-
-        inputEl.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (selectedFile) sendImage(); else sendText();
+            if (!data.has_more) {
+                noMorePages = true;
+                if (loadMoreWrap) loadMoreWrap.remove();
+            } else {
+                if (loadMoreBtn) loadMoreBtn.textContent = '⟳ Memuat pesan sebelumnya...';
             }
-        });
+        } catch (e) {
+            if (loadMoreBtn) loadMoreBtn.textContent = '⚠ Gagal, coba lagi';
+        } finally {
+            isLoading = false;
+        }
+    }
 
-        /* ═══ Terima pesan via WebSocket (Pusher) ═══ */
-        window.Echo.private(`chat.${authId}`)
-            .listen('.MessageSent', (e) => {
-                if(parseInt(e.sender_id) == parseInt(receiverId)) {
-                    // PENGUBAHAN PENTING: Petakan data Pusher (e.file_path) ke format UI Anda (imageUrl)
-                    appendMessage({
-                        content: e.content,
-                        imageUrl: e.file_path,
-                        isSender: false
-                    });
-                }
+    /* ── Bangun elemen bubble dari data JSON ── */
+    function buildBubble(msg) {
+        const isSender = parseInt(msg.sender_id) === parseInt(authId);
+        const side     = isSender ? 'me' : 'other';
+        const checks   = isSender ? '<span class="checks">&#10003;&#10003;</span>' : '';
+        let inner      = '';
+
+        if (msg.file_path) {
+            inner += `<img class="bubble-img" src="${msg.file_path}" alt="foto" onclick="openLightbox(this.src)">`;
+        }
+        if (msg.content && msg.content !== '📷 Mengirim Foto') {
+            inner += `<span>${esc(msg.content)}</span>`;
+        }
+
+        const row = document.createElement('div');
+        row.className = `bubble-row ${side}`;
+        row.innerHTML = `
+            <div class="bubble ${side}">
+                ${inner}
+                <div class="bubble-footer">
+                    <span class="bubble-time">${msg.created_at}</span>
+                    ${checks}
+                </div>
+            </div>`;
+        return row;
+    }
+
+    /* ── Format waktu WIB ── */
+    function nowStr() {
+        return new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit', minute: '2-digit',
+            hour12: false, timeZone: 'Asia/Jakarta'
+        });
+    }
+
+    function fmtBytes(b) {
+        return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB';
+    }
+
+    function esc(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* ── Tambah bubble pesan baru (realtime/kirim) ── */
+    function appendMessage({ content, imageUrl, isSender }) {
+        const side   = isSender ? 'me' : 'other';
+        const checks = isSender ? '<span class="checks">&#10003;&#10003;</span>' : '';
+        let inner    = '';
+
+        if (imageUrl) inner += `<img class="bubble-img" src="${imageUrl}" alt="foto" onclick="openLightbox(this.src)">`;
+        if (content && content !== '📷 Mengirim Foto') inner += `<span>${esc(content)}</span>`;
+
+        const row = document.createElement('div');
+        row.className = `bubble-row ${side}`;
+        row.innerHTML = `
+            <div class="bubble ${side}">
+                ${inner}
+                <div class="bubble-footer">
+                    <span class="bubble-time">${nowStr()}</span>
+                    ${checks}
+                </div>
+            </div>`;
+        newMessages.appendChild(row);   // append ke #new-messages (paling bawah)
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    /* ═══ Kirim teks ═══ */
+    function sendText() {
+        const content = inputEl.value.trim();
+        if (!content) return;
+
+        appendMessage({ content, isSender: true });
+        inputEl.value = '';
+        closeEmoji();
+
+        fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        }).catch(() => alert('Gagal mengirim pesan. Silakan refresh.'));
+    }
+
+    /* ═══ Kirim foto ═══ */
+    attachBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', function () {
+        const f = this.files[0];
+        if (!f) return;
+        if (f.size > 5 * 1024 * 1024) { alert('Ukuran foto maksimal 5MB.'); this.value=''; return; }
+        selectedFile = f;
+        const rd = new FileReader();
+        rd.onload = e => {
+            document.getElementById('preview-thumb').src = e.target.result;
+            document.getElementById('preview-name').textContent = f.name;
+            document.getElementById('preview-size').textContent = fmtBytes(f.size);
+            previewBar.classList.add('show');
+        };
+        rd.readAsDataURL(f);
+    });
+
+    document.getElementById('preview-cancel').addEventListener('click', cancelImage);
+
+    function cancelImage() {
+        selectedFile = null;
+        fileInput.value = '';
+        previewBar.classList.remove('show');
+    }
+
+    function sendImage() {
+        const fd = new FormData();
+        fd.append('image', selectedFile);
+        const content = inputEl.value.trim();
+        fd.append('content', content || '📷 Mengirim Foto');
+
+        const localSrc = document.getElementById('preview-thumb').src;
+        cancelImage();
+        appendMessage({ content, imageUrl: localSrc, isSender: true });
+        inputEl.value = '';
+        closeEmoji();
+
+        fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: fd
+        }).catch(() => alert('Gagal mengirim foto.'));
+    }
+
+    /* ═══ Emoji Picker ═══ */
+    const EMOJIS = {
+        'Smiley': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳'],
+        'Gestur': ['👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','👋','🤚','🖐️','✋','🖖','🤏','💪','🙌','👐','🤲','🙏','🤝','✍️'],
+        'Hati':   ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','♥️','💋','💌'],
+        'Objek':  ['🎉','🎊','🎈','🎁','🔥','✨','⭐','🌟','💫','🌈','☀️','🌙','⚡','❄️','🌊','🍕','🍔','🍜','☕','🎵','🎶','📱','💻','📷','🚗','✈️','🏠','💰','🎮'],
+    };
+
+    (function buildEmojiPicker() {
+        for (const [cat, emojis] of Object.entries(EMOJIS)) {
+            const label = document.createElement('div');
+            label.className = 'ep-category';
+            label.textContent = cat;
+            emojiPicker.appendChild(label);
+            emojis.forEach(em => {
+                const btn = document.createElement('button');
+                btn.className = 'emoji-btn';
+                btn.textContent = em;
+                btn.type = 'button';
+                btn.addEventListener('click', () => {
+                    const pos = inputEl.selectionStart ?? inputEl.value.length;
+                    const val = inputEl.value;
+                    inputEl.value = val.slice(0, pos) + em + val.slice(pos);
+                    inputEl.focus();
+                    const newPos = pos + [...em].length;
+                    inputEl.setSelectionRange(newPos, newPos);
+                });
+                emojiPicker.appendChild(btn);
             });
+        }
+    })();
+
+    emojiToggle.addEventListener('click', e => { e.stopPropagation(); emojiPicker.classList.toggle('show'); });
+    function closeEmoji() { emojiPicker.classList.remove('show'); }
+    document.addEventListener('click', e => {
+        if (!emojiPicker.contains(e.target) && e.target !== emojiToggle) closeEmoji();
+    });
+
+    /* ═══ Tombol Kirim ═══ */
+    sendBtn.addEventListener('click', () => { if (selectedFile) sendImage(); else sendText(); });
+    inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (selectedFile) sendImage(); else sendText();
+        }
+    });
+
+    /* ═══ WebSocket ═══ */
+    window.Echo.private(`chat.${authId}`)
+        .listen('.MessageSent', (e) => {
+            if (parseInt(e.sender_id) === parseInt(receiverId)) {
+                appendMessage({ content: e.content, imageUrl: e.file_path, isSender: false });
+            }
+        });
     </script>
 
     <script>
