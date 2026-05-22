@@ -71,10 +71,13 @@ class ChatController extends Controller
 
     public function lockContacts(Request $request)
     {
-        // Menghapus tanda izin masuk saat klik tombol kembali
         $request->session()->forget('kontak_terbuka');
         $request->session()->forget('puzzle_angka1');
         $request->session()->forget('puzzle_angka2');
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return redirect()->route('chat.contacts');
     }

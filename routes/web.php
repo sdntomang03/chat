@@ -26,6 +26,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/latihan/unlock', [ChatController::class, 'unlockContacts'])->name('chat.unlock');
     Route::get('/latihan/lock', [ChatController::class, 'lockContacts'])->name('chat.lock_session');
+    Route::post('/chat/lock-session', [ChatController::class, 'lockContacts'])->name('chat.lock_session')->middleware('auth');
 });
 
 require __DIR__.'/auth.php';

@@ -805,6 +805,42 @@
         });
     </script>
 
+    <script>
+        (function () {
+    const IDLE_MS = 60_000;
+    const csrf    = document.querySelector('meta[name="csrf-token"]').content;
+
+    let idleTimer = null;
+
+    function resetIdle() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(doLock, IDLE_MS);
+    }
+
+    function doLock() {
+        fetch('{{ route("chat.lock_session") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        })
+        .finally(() => {
+            window.location.href = '{{ route("chat.contacts") }}';
+        });
+    }
+
+    // Reset timer saat ada aktivitas
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
+        document.addEventListener(ev, resetIdle, { passive: true })
+    );
+
+    // Lock langsung saat pindah tab / minimize
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) doLock();
+    });
+
+    resetIdle(); // mulai timer
+})();
+    </script>
+
 </body>
 
 </html>
