@@ -128,7 +128,7 @@ class ChatController extends Controller
 
         // Cek apakah ada file gambar yang diunggah
         if ($request->hasFile('image')) {
-            $request->validate(['image' => 'image|max:2048']); // Max 2MB
+            $request->validate(['image' => 'image|max:8000']); // Max 8MB
             $path = $request->file('image')->store('chat_images', 'public');
             $type = 'image';
             $filePath = '/storage/'.$path;
