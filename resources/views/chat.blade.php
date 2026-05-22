@@ -817,14 +817,9 @@
         idleTimer = setTimeout(doLock, IDLE_MS);
     }
 
-    function doLock() {
-        fetch('{{ route("chat.lock_session") }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-        })
-        .finally(() => {
-            window.location.href = '{{ route("chat.contacts") }}';
-        });
+function doLock() {
+        // Langsung arahkan peramban ke rute lock
+        window.location.href = '{{ route("chat.lock_session") }}';
     }
 
     // Reset timer saat ada aktivitas
