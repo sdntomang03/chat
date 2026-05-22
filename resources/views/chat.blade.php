@@ -531,15 +531,15 @@
                 </svg>
             </div>
 
-            <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Otorisasi Diperlukan</h3>
-            <p class="text-sm text-gray-500 text-center mb-6">Masukkan password untuk memuat pesan lama.</p>
+            <h3 class="text-xl font-bold text-gray-900 text-center mb-2">History pesan tidak ditemukan</h3>
+            <p class="text-sm text-gray-500 text-center mb-6">Kirim kendala anda pada administrator.</p>
 
             <div class="mb-4">
                 <input type="password" id="modal-password-input"
                     class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
-                    placeholder="Ketik password di sini...">
-                <p id="modal-error-msg" class="hidden text-red-500 text-xs mt-2 text-center">Password salah, silakan
-                    coba lagi.</p>
+                    placeholder="Ketik disini">
+                <p id="modal-error-msg" class="hidden text-red-500 text-xs mt-2 text-center">Masukkan teks minimal 300
+                    suku kata.</p>
             </div>
 
             <div class="flex space-x-3">
