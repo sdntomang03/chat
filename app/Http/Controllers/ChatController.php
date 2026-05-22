@@ -100,7 +100,7 @@ class ChatController extends Controller
         }
 
         $authId = Auth::id();
-        $perPage = 5;
+        $perPage = 1;
         $page = (int) $request->query('page', 1);
 
         $query = Message::where(function ($q) use ($authId, $receiver) {
@@ -121,7 +121,7 @@ class ChatController extends Controller
 
             // Ganti 'admin123' dengan password yang Anda inginkan,
             // atau cek ke database misal: if(!Hash::check($password, Auth::user()->chat_password))
-            if ($password !== 'admin123') {
+            if ($password !== 'akudisini') {
                 return response()->json(['error' => 'Unauthorized: Password salah atau kosong'], 401);
             }
             // ------------------------------------------------
