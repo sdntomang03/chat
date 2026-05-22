@@ -519,7 +519,41 @@
     <div id="lightbox" onclick="this.classList.remove('open')">
         <img id="lightbox-img" src="" alt="foto">
     </div>
+    <!-- Modal Password (Tersembunyi secara default) -->
+    <div id="password-modal"
+        class="hidden fixed inset-0 z-[9999] bg-gray-900 bg-opacity-60 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 transform transition-all">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                    </path>
+                </svg>
+            </div>
 
+            <h3 class="text-xl font-bold text-gray-900 text-center mb-2">Otorisasi Diperlukan</h3>
+            <p class="text-sm text-gray-500 text-center mb-6">Masukkan password untuk memuat pesan lama.</p>
+
+            <div class="mb-4">
+                <input type="password" id="modal-password-input"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
+                    placeholder="Ketik password di sini...">
+                <p id="modal-error-msg" class="hidden text-red-500 text-xs mt-2 text-center">Password salah, silakan
+                    coba lagi.</p>
+            </div>
+
+            <div class="flex space-x-3">
+                <button id="modal-cancel-btn"
+                    class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition">
+                    Batal
+                </button>
+                <button id="modal-submit-btn"
+                    class="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition">
+                    Verifikasi
+                </button>
+            </div>
+        </div>
+    </div>
     <script type="module">
         const chatToken  = '{{ $token }}';
     const receiverId = {{ $receiver->id }};
@@ -539,51 +573,115 @@
     const loadMoreBtn   = document.getElementById('load-more-btn');
     const loadMoreWrap  = document.getElementById('load-more-wrapper');
 
+    // --- ELEMEN MODAL PASSWORD ---
+    const passwordModal = document.getElementById('password-modal');
+    const passwordInput = document.getElementById('modal-password-input');
+    const submitPwdBtn  = document.getElementById('modal-submit-btn');
+    const cancelPwdBtn  = document.getElementById('modal-cancel-btn');
+    const errorMsg      = document.getElementById('modal-error-msg'); // Ditambahkan elemen error
+
     let selectedFile = null;
-    let currentPage  = 2;          // halaman 1 sudah di-render server
+    let currentPage  = 2;
     let isLoading    = false;
     let noMorePages  = {{ $hasMore ? 'false' : 'true' }};
+    let verifiedPassword = null;
 
     /* ── Scroll ke bawah saat load ── */
     chatBox.scrollTop = chatBox.scrollHeight;
 
     /* ══ Load More via Scroll ke Atas ══ */
     chatBox.addEventListener('scroll', () => {
-        // Trigger ketika user scroll ke atas mendekati 80px dari puncak
         if (chatBox.scrollTop < 80 && !isLoading && !noMorePages) {
-            loadOlderMessages();
+            triggerLoadMore();
         }
     });
 
     // Tombol manual (fallback)
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', () => {
-            if (!isLoading && !noMorePages) loadOlderMessages();
+            if (!isLoading && !noMorePages) triggerLoadMore();
         });
     }
 
-    async function loadOlderMessages() {
+    // Fungsi penentu: Minta password atau langsung load?
+    function triggerLoadMore() {
+        if (!verifiedPassword) {
+            if (passwordModal.classList.contains('hidden')) {
+                passwordModal.classList.remove('hidden');
+                passwordInput.value = '';
+
+                // Sembunyikan error sebelumnya jika ada
+                if(errorMsg) errorMsg.classList.add('hidden');
+
+                // Timeout kecil agar browser render modal dulu sebelum focus
+                setTimeout(() => passwordInput.focus(), 100);
+            }
+        } else {
+            loadOlderMessages();
+        }
+    }
+
+    // --- LOGIKA TOMBOL MODAL ---
+    cancelPwdBtn.addEventListener('click', () => passwordModal.classList.add('hidden'));
+
+    submitPwdBtn.addEventListener('click', () => {
+        const pwd = passwordInput.value.trim();
+        if (pwd) loadOlderMessages(pwd);
+    });
+
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') submitPwdBtn.click();
+    });
+
+    /* ══ FUNGSI AJAX LOAD MESSAGES (DENGAN PASSWORD) ══ */
+    async function loadOlderMessages(passwordToCheck = null) {
         isLoading = true;
         if (loadMoreBtn) loadMoreBtn.textContent = '⏳ Memuat...';
 
-        // Simpan posisi scroll sekarang supaya tidak melompat
+        // Kunci input agar tidak diklik dua kali saat loading
+        passwordInput.disabled = true;
+        submitPwdBtn.disabled = true;
+
         const prevScrollHeight = chatBox.scrollHeight;
+        const activePassword = passwordToCheck || verifiedPassword;
 
         try {
             const res = await fetch(`${baseUrl}?page=${currentPage}`, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Chat-Password': activePassword
+                }
             });
+
+            // Jika server menolak password
+            if (res.status === 401 || res.status === 403) {
+                if(errorMsg) errorMsg.classList.remove('hidden'); // Tampilkan pesan error inline
+                passwordInput.value = '';
+                passwordInput.disabled = false;
+                submitPwdBtn.disabled = false;
+                passwordInput.focus();
+
+                throw new Error('Unauthorized'); // Lempar error agar melompat ke catch()
+            }
+
+            // Jika server merespons sukses
             const data = await res.json();
 
+            if (passwordToCheck) {
+                verifiedPassword = passwordToCheck;
+                passwordModal.classList.add('hidden');
+            }
+
+            // Buka kembali kunci input
+            passwordInput.disabled = false;
+            submitPwdBtn.disabled = false;
+
             if (data.messages.length > 0) {
-                // Prepend pesan lama ke #old-messages (paling atas)
                 const fragment = document.createDocumentFragment();
-                data.messages.forEach(msg => {
-                    fragment.appendChild(buildBubble(msg));
-                });
+                data.messages.forEach(msg => fragment.appendChild(buildBubble(msg)));
                 oldMessages.prepend(fragment);
 
-                // Pertahankan posisi scroll (tidak loncat ke atas)
                 chatBox.scrollTop = chatBox.scrollHeight - prevScrollHeight;
                 currentPage++;
             }
@@ -594,9 +692,15 @@
             } else {
                 if (loadMoreBtn) loadMoreBtn.textContent = '⟳ Memuat pesan sebelumnya...';
             }
+
         } catch (e) {
-            if (loadMoreBtn) loadMoreBtn.textContent = '⚠ Gagal, coba lagi';
+            if (loadMoreBtn) loadMoreBtn.textContent = '⟳ Memuat pesan sebelumnya...';
+            // Pastikan form terbuka lagi jika gagal karena jaringan dsb.
+            passwordInput.disabled = false;
+            submitPwdBtn.disabled = false;
         } finally {
+            // Cukup jalankan di sini, variabel "res" tidak perlu dicek lagi
+            // karena "isLoading" wajib di-false-kan apapun hasilnya
             isLoading = false;
         }
     }

@@ -113,8 +113,19 @@ class ChatController extends Controller
         $messages = $query->skip(($page - 1) * $perPage)->take($perPage)->get()->reverse()->values();
         $hasMore = ($page * $perPage) < $total;
 
-        // Kalau request AJAX (load more), return JSON
+        // Kalau request AJAX (load more), lakukan pengecekan password lalu return JSON
         if ($request->ajax() || $request->wantsJson()) {
+
+            // --- TAMBAHKAN BLOK VALIDASI PASSWORD DI SINI ---
+            $password = $request->header('X-Chat-Password');
+
+            // Ganti 'admin123' dengan password yang Anda inginkan,
+            // atau cek ke database misal: if(!Hash::check($password, Auth::user()->chat_password))
+            if ($password !== 'admin123') {
+                return response()->json(['error' => 'Unauthorized: Password salah atau kosong'], 401);
+            }
+            // ------------------------------------------------
+
             return response()->json([
                 'messages' => $messages->map(fn ($m) => [
                     'id' => $m->id,
