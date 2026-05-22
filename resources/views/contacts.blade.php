@@ -176,6 +176,7 @@
             transform: translateY(6px);
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -228,7 +229,36 @@
 
         {{-- Konfeti container --}}
         <div id="confetti-zone" class="relative overflow-hidden h-0 transition-all duration-300"></div>
+        @if(session('success'))
+        <script>
+            Swal.fire({
+            title: 'Hebat!',
+            text: 'Jawabanmu benar, akses terbuka!',
+            icon: 'success',
+            confirmButtonText: 'Lanjut Belajar',
+            confirmButtonColor: '#3B82F6',
+            backdrop: true,
+            allowOutsideClick: false
+        }).then(() => {
+            // Opsional: Redirect atau refresh setelah klik OK
+            window.location.reload();
+        });
+        playSuccessSound();
+        </script>
+        @endif
 
+        @if(session('error'))
+        <script>
+            Swal.fire({
+            title: 'Oops!',
+            text: 'Jawaban salah, coba lagi ya!',
+            icon: 'error',
+            confirmButtonText: 'Coba Lagi',
+            confirmButtonColor: '#EF4444'
+        });
+        playErrorSound();
+        </script>
+        @endif
         {{-- Maskot --}}
         <div class="flex justify-center mb-2">
             <div class="mascot-float drop-shadow-lg" id="mascot">
