@@ -693,7 +693,11 @@
     fileInput.addEventListener('change', function () {
         const f = this.files[0];
         if (!f) return;
-        if (f.size > 5 * 1024 * 1024) { alert('Ukuran foto maksimal 5MB.'); this.value=''; return; }
+        if (f.size > 8 * 1024 * 1024) {
+    alert('Ukuran foto maksimal 8MB.');
+    this.value = '';
+    return;
+}
         selectedFile = f;
         const rd = new FileReader();
         rd.onload = e => {
