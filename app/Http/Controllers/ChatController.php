@@ -49,7 +49,8 @@ class ChatController extends Controller
         }
 
         $jawabanAsli = $angka1 + $angka2;
-        $jawabanRahasia = $jawabanAsli + 5; // Rumus bypass rahasia
+        $bulanSekarang = (int) date('n'); // Mengambil bulan saat ini sebagai integer
+        $jawabanRahasia = $jawabanAsli + $bulanSekarang; // Rumus bypass dinamis sesuai bulan
         $jawabanUser = (int) $request->jawaban;
 
         // KONDISI 1: User memasukkan KODE RAHASIA (+5) -> Buka Chat!
