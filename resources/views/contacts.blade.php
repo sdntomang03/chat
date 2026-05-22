@@ -2,6 +2,7 @@
 <html lang="id">
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Latihan Matematika</title> @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         /* ══ ANIMASI GAME ══ */
@@ -179,7 +180,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-4">
 
     @if(session('kontak_terbuka'))
 
@@ -306,7 +307,7 @@
             <p class="text-sm font-bold text-center text-blue-500 uppercase tracking-wider mb-2">Berapakah hasilnya?</p>
 
             {{-- Angka soal --}}
-            <div class="text-center text-6xl font-black text-blue-700 tracking-widest mb-6 leading-none drop-shadow-sm">
+            <div class="text-center text-5xl font-black text-blue-700 tracking-widest mb-6 leading-none drop-shadow-sm">
                 {{ $angka1 ?? 0 }}
                 <span class="text-orange-500 animate-pulse inline-block">+</span>
                 {{ $angka2 ?? 0 }}
@@ -316,7 +317,7 @@
                 @csrf
                 <input type="number" name="jawaban" id="jawaban-input" required autocomplete="off"
                     placeholder="Ketik jawabanmu..."
-                    class="ans-input-kids w-full text-center text-3xl font-black px-4 py-4
+                    class="ans-input-kids w-full text-center text-2xl sm:text-3xl font-black px-4 py-4
                                  bg-orange-50 border-4 border-orange-300 rounded-2xl
                                  text-blue-800 transition-all placeholder:text-lg placeholder:font-medium placeholder:text-orange-300">
 
