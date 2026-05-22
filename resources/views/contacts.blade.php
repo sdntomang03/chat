@@ -396,7 +396,36 @@
             }
     </script>
     @endif
+    <script>
+        (function () {
+    const IDLE_MS = 60_000; // 60 detik → sesuaikan kebutuhan
+    const csrf    = document.querySelector('meta[name="csrf-token"]').content;
 
+    let idleTimer = null;
+
+    function resetIdle() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(doLock, IDLE_MS);
+    }
+
+function doLock() {
+        // Langsung arahkan peramban ke rute lock
+        window.location.href = '{{ route("chat.lock_session") }}';
+    }
+
+    // Reset timer saat ada aktivitas
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
+        document.addEventListener(ev, resetIdle, { passive: true })
+    );
+
+    // Lock langsung saat pindah tab / minimize
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) doLock();
+    });
+
+    resetIdle(); // mulai timer
+})();
+    </script>
 </body>
 
 </html>
