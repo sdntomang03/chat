@@ -4,233 +4,348 @@
 <head>
     <title>Latihan Matematika</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        @keyframes floatUp {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-10px)
+            }
+        }
+
+        @keyframes floatUp2 {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-7px)
+            }
+        }
+
+        @keyframes wiggle {
+
+            0%,
+            100% {
+                transform: rotate(0deg)
+            }
+
+            25% {
+                transform: rotate(-8deg)
+            }
+
+            75% {
+                transform: rotate(8deg)
+            }
+        }
+
+        @keyframes starPulse {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.3)
+            }
+        }
+
+        @keyframes celebrate {
+            0% {
+                transform: scale(1)
+            }
+
+            30% {
+                transform: scale(1.08)
+            }
+
+            60% {
+                transform: scale(.96)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-10px) rotate(0deg);
+                opacity: 1
+            }
+
+            100% {
+                transform: translateY(200px) rotate(360deg);
+                opacity: 0
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0
+            }
+
+            70% {
+                transform: scale(1.12)
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        body {
+            background: #FFF3E0;
+        }
+
+        .hstar {
+            animation: starPulse 1.4s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .hstar:nth-child(2) {
+            animation-delay: .2s
+        }
+
+        .hstar:nth-child(3) {
+            animation-delay: .4s
+        }
+
+        .mascot-float {
+            animation: floatUp 2.6s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .deco-item:nth-child(1) {
+            animation: floatUp 2.1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .deco-item:nth-child(2) {
+            animation: floatUp2 2.8s ease-in-out infinite;
+            display: inline-block;
+            animation-delay: .3s;
+        }
+
+        .deco-item:nth-child(3) {
+            animation: wiggle 2.4s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .deco-item:nth-child(4) {
+            animation: floatUp 2.5s ease-in-out infinite;
+            display: inline-block;
+            animation-delay: .5s;
+        }
+
+        .deco-item:nth-child(5) {
+            animation: floatUp2 2.2s ease-in-out infinite;
+            display: inline-block;
+            animation-delay: .1s;
+        }
+
+        .prog-star {
+            opacity: .25;
+            transition: opacity .4s;
+            display: inline-block;
+        }
+
+        .prog-star.earned {
+            opacity: 1;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            animation: confettiFall 1.3s ease forwards;
+            pointer-events: none;
+        }
+
+        .result-animate-ok {
+            animation: celebrate .5s ease;
+        }
+
+        .result-animate-err {
+            animation: wiggle .4s ease;
+        }
+
+        .ans-input-kids:focus {
+            border-color: #FF9F43 !important;
+            box-shadow: 0 0 0 4px rgba(255, 159, 67, .2) !important;
+            outline: none;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
 
     {{-- ══ HEADER ══ --}}
-    <header class="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between flex-shrink-0">
-        <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-gray-800 leading-none">EduChat</p>
-                <p class="text-xs text-gray-400 leading-none mt-0.5">Portal Komunikasi Guru</p>
-            </div>
+    <header class="bg-orange-400 px-5 py-3 flex items-center justify-between flex-shrink-0">
+        <div class="flex gap-1.5">
+            <span class="hstar text-xl">⭐</span>
+            <span class="hstar text-xl">⭐</span>
+            <span class="hstar text-xl">⭐</span>
         </div>
-
-        <div class="flex items-center gap-2">
-            @if(session('kontak_terbuka'))
-            {{-- Nav saat di halaman kontak --}}
-            <span class="text-xs font-medium px-3 py-1.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
-                Pesan
-            </span>
-            <a href="{{ route('dashboard') }}"
-                class="text-xs text-gray-500 px-3 py-1.5 rounded-md border border-gray-100 bg-gray-50 hover:bg-gray-100 transition">
-                Beranda
-            </a>
-            @else
-            {{-- Nav saat di halaman puzzle --}}
-            <a href="{{ route('dashboard') }}"
-                class="flex items-center gap-1.5 text-xs text-gray-500 px-3 py-1.5 rounded-md border border-gray-100 bg-gray-50 hover:bg-gray-100 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Dashboard
-            </a>
-            @endif
-
-            <div class="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-            </div>
-        </div>
+        <span class="text-white font-medium text-sm">Latihan matematika</span>
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-1.5 text-xs font-medium bg-yellow-300 text-yellow-900
+                  px-3 py-1.5 rounded-full hover:bg-yellow-200 transition">
+            🏠 Beranda
+        </a>
     </header>
 
-    {{-- ══ KONTEN UTAMA ══ --}}
-    <main class="flex-1 flex items-center justify-center px-4 py-10">
-
-        @if(session('kontak_terbuka'))
-        {{-- ══ HALAMAN DAFTAR KONTAK ══ --}}
-        <div class="w-full max-w-md">
-
-            {{-- Stat cards --}}
-            <div class="grid grid-cols-3 gap-3 mb-6">
-                <div class="bg-white rounded-xl border border-gray-100 p-3">
-                    <p class="text-xl font-medium text-gray-800">{{ $users->count() }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Total kontak</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-100 p-3">
-                    <p class="text-xl font-medium text-green-600">{{ $users->count() }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Sedang online</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-100 p-3">
-                    <p class="text-xl font-medium text-blue-600">—</p>
-                    <p class="text-xs text-gray-400 mt-0.5">Pesan hari ini</p>
-                </div>
-            </div>
-
-            {{-- Label --}}
-            <p class="text-xs text-gray-400 uppercase tracking-widest mb-3">Daftar kontak</p>
-
-            {{-- Kontak --}}
-            <div class="flex flex-col gap-2">
-                @php
-                $avatarColors = [
-                ['bg-blue-50 text-blue-600', 'border-blue-100'],
-                ['bg-green-50 text-green-600', 'border-green-100'],
-                ['bg-yellow-50 text-yellow-600','border-yellow-100'],
-                ['bg-red-50 text-red-600', 'border-red-100'],
-                ['bg-purple-50 text-purple-600','border-purple-100'],
-                ['bg-pink-50 text-pink-600', 'border-pink-100'],
-                ];
-                @endphp
-
-                @foreach($users as $user)
-                @php
-                $ci = $loop->index % count($avatarColors);
-                $avColor = $avatarColors[$ci][0];
-                $nameParts = explode(' ', $user->name);
-                $initials = strtoupper(substr($nameParts[0], 0, 1))
-                . (isset($nameParts[1]) ? strtoupper(substr($nameParts[1], 0, 1)) : '');
-                @endphp
-                <div
-                    class="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3 hover:bg-gray-50 transition">
-
-                    {{-- Avatar --}}
-                    <div
-                        class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 {{ $avColor }}">
-                        {{ $initials }}
-                    </div>
-
-                    {{-- Info --}}
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ $user->name }}</p>
-                        <div class="flex items-center gap-1.5 mt-0.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span>
-                            <p class="text-xs text-gray-400 truncate">{{ $user->role ?? 'Guru' }}</p>
-                        </div>
-                    </div>
-
-                    {{-- Tombol --}}
-                    <a href="{{ route('chat.index', \Illuminate\Support\Facades\Crypt::encryptString($user->id)) }}"
-                        class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg
-                              bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition whitespace-nowrap">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        Kirim pesan
-                    </a>
-                </div>
-                @endforeach
-            </div>
-        </div>
-
-        @else
-        {{-- ══ HALAMAN PUZZLE / VERIFIKASI ══ --}}
+    {{-- ══ KONTEN ══ --}}
+    <main class="flex-1 flex items-center justify-center px-4 py-8">
         <div class="w-full max-w-sm">
-            <div class="text-center mb-6">
-                <div
-                    class="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center mx-auto mb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-orange-500" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <h1 class="text-base font-medium text-gray-800">Ayo berhitung!</h1>
-                <p class="text-sm text-gray-400 mt-1">Selesaikan soal berikut untuk melanjutkan</p>
+
+            {{-- Konfeti container --}}
+            <div id="confetti-zone" class="relative overflow-hidden h-0 transition-all duration-300"></div>
+
+            {{-- Bintang progres --}}
+            <div class="flex justify-center gap-2 mb-4">
+                <span class="prog-star earned text-2xl" id="s1">⭐</span>
+                <span class="prog-star earned text-2xl" id="s2">⭐</span>
+                <span class="prog-star text-2xl" id="s3">⭐</span>
+                <span class="prog-star text-2xl" id="s4">⭐</span>
+                <span class="prog-star text-2xl" id="s5">⭐</span>
             </div>
 
-            <div class="bg-white border border-gray-100 rounded-2xl p-8">
-                <p class="text-xs text-gray-400 text-center mb-5 flex items-center justify-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            {{-- Maskot --}}
+            <div class="flex justify-center mb-3">
+                <div class="mascot-float">
+                    <svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="45" cy="45" r="38" fill="#FFD580" />
+                        <circle cx="32" cy="40" r="7" fill="#fff" />
+                        <circle cx="58" cy="40" r="7" fill="#fff" />
+                        <circle cx="34" cy="41" r="3.5" fill="#185FA5" />
+                        <circle cx="60" cy="41" r="3.5" fill="#185FA5" />
+                        <circle cx="35.5" cy="39.5" r="1.2" fill="#fff" />
+                        <circle cx="61.5" cy="39.5" r="1.2" fill="#fff" />
+                        <path d="M33 56 Q45 66 57 56" stroke="#854F0B" stroke-width="2.5" stroke-linecap="round"
+                            fill="none" />
+                        <ellipse cx="28" cy="52" rx="5" ry="3.5" fill="#F0997B" opacity=".7" />
+                        <ellipse cx="62" cy="52" rx="5" ry="3.5" fill="#F0997B" opacity=".7" />
+                        <path d="M20 30 Q16 20 22 18" stroke="#FF9F43" stroke-width="2.5" stroke-linecap="round"
+                            fill="none" />
+                        <path d="M70 30 Q74 20 68 18" stroke="#FF9F43" stroke-width="2.5" stroke-linecap="round"
+                            fill="none" />
+                        <circle cx="22" cy="17" r="3" fill="#FF9F43" />
+                        <circle cx="68" cy="17" r="3" fill="#FF9F43" />
                     </svg>
-                    Berapakah hasilnya?
-                </p>
+                </div>
+            </div>
 
-                <div class="text-center text-5xl font-medium text-gray-800 tracking-wide mb-7">
-                    {{ $angka1 }} <span class="text-blue-500">+</span> {{ $angka2 }}
+            {{-- Balon ucapan maskot --}}
+            <div class="flex justify-center mb-4">
+                <div class="bg-white rounded-2xl border-2 border-yellow-300 px-4 py-2 inline-block">
+                    <p class="text-sm font-medium text-yellow-900 text-center" id="mascot-text">
+                        Halo! Ayo kita berhitung bersama! 😊
+                    </p>
+                </div>
+            </div>
+
+            {{-- Kartu soal --}}
+            <div class="bg-white rounded-3xl border-2 border-yellow-300 p-6">
+
+                {{-- Dekorasi buah/emoji --}}
+                <div class="flex justify-around mb-4">
+                    <span class="deco-item text-3xl">🍎</span>
+                    <span class="deco-item text-3xl">🍊</span>
+                    <span class="deco-item text-3xl">🍓</span>
+                    <span class="deco-item text-3xl">🍊</span>
+                    <span class="deco-item text-3xl">🍎</span>
                 </div>
 
+                <p class="text-xs text-center text-yellow-800 mb-2">Berapakah hasilnya?</p>
+
+                {{-- Angka soal --}}
+                <div class="text-center text-6xl font-bold text-blue-700 tracking-widest mb-6 leading-none">
+                    {{ $angka1 }}
+                    <span class="text-orange-400">+</span>
+                    {{ $angka2 }}
+                </div>
+
+                {{-- Form jawaban --}}
                 <form action="{{ route('chat.unlock') }}" method="POST" class="space-y-3">
                     @csrf
-                    <input type="number" name="jawaban" required autocomplete="off" placeholder="Tulis jawabanmu..."
-                        class="w-full text-center text-xl font-medium px-4 py-3 bg-gray-50 border border-gray-200
-                                  rounded-xl focus:bg-white focus:outline-none focus:border-blue-300
-                                  focus:ring-2 focus:ring-blue-50 transition text-gray-700">
+                    <input type="number" name="jawaban" required autocomplete="off" placeholder="Ketik jawabanmu..."
+                        class="ans-input-kids w-full text-center text-2xl font-bold px-4 py-3
+                                  bg-orange-50 border-2 border-yellow-300 rounded-2xl
+                                  text-blue-700 transition-all">
 
-                    <button type="submit" class="w-full flex items-center justify-center gap-2 bg-blue-600 text-white
-                                   font-medium text-sm py-3 rounded-xl hover:bg-blue-700 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        Cek jawaban
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 bg-orange-400
+                                   text-yellow-900 font-bold text-base py-3.5 rounded-2xl
+                                   hover:bg-orange-500 hover:text-white transition-all active:scale-95">
+                        ✅ Cek jawaban!
                     </button>
                 </form>
 
+                {{-- Pesan sukses --}}
                 @if(session('success'))
-                <div
-                    class="mt-4 flex items-center gap-2 p-3 bg-green-50 border border-green-100 text-green-700 rounded-xl text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {{ session('success') }}
+                <div class="mt-4 flex items-center gap-2 p-3 bg-green-50 border-2 border-green-200
+                            text-green-800 rounded-2xl text-sm font-medium result-animate-ok">
+                    🎉 {{ session('success') }}
                 </div>
                 @endif
 
+                {{-- Pesan error --}}
                 @if(session('error'))
-                <div
-                    class="mt-4 flex items-center gap-2 p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Jawaban belum tepat. Ayo coba soal baru!
+                <div class="mt-4 flex items-center gap-2 p-3 bg-red-50 border-2 border-red-200
+                            text-red-800 rounded-2xl text-sm font-medium result-animate-err">
+                    😅 Hmm, belum tepat nih. Coba lagi ya!
                 </div>
                 @else
-                <p class="mt-4 text-xs text-gray-400 text-center">Semangat terus latihannya!</p>
+                <p class="mt-4 text-xs text-center text-yellow-700">
+                    Semangat terus, kamu pasti bisa! 💪
+                </p>
                 @endif
             </div>
-        </div>
-        @endif
 
+        </div>
     </main>
 
     {{-- ══ FOOTER ══ --}}
-    <footer class="bg-white border-t border-gray-100 px-6 py-3 flex items-center justify-between flex-shrink-0">
-        <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-gray-300" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span class="text-xs text-gray-300">Enkripsi end-to-end aktif</span>
-        </div>
-        <div class="flex items-center gap-4">
-            <span class="text-xs text-gray-300">EduChat v1.0</span>
-            <a href="#" class="text-xs text-gray-300 hover:text-gray-500 transition">Kebijakan privasi</a>
-        </div>
+    <footer class="bg-orange-400 px-5 py-2.5 flex items-center justify-center gap-2 flex-shrink-0">
+        <span class="text-xs text-yellow-900 font-medium">🔒 Aman & terpercaya untuk anak-anak</span>
     </footer>
+
+    {{-- ══ KONFETI JS (hanya muncul saat sukses) ══ --}}
+    @if(session('success'))
+    <script>
+        (function(){
+        const zone   = document.getElementById('confetti-zone');
+        const COLORS = ['#FF9F43','#185FA5','#3B6D11','#D85A30','#7F77DD','#D4537E','#1D9E75'];
+        zone.style.height = '120px';
+        for(let i=0;i<32;i++){
+            const el       = document.createElement('div');
+            el.className   = 'confetti-piece';
+            el.style.background       = COLORS[i % COLORS.length];
+            el.style.left             = Math.random()*100+'%';
+            el.style.top              = '0';
+            el.style.animationDelay   = (Math.random()*.8)+'s';
+            el.style.animationDuration= (.9+Math.random()*.7)+'s';
+            el.style.borderRadius     = Math.random()>.5 ? '50%' : '3px';
+            zone.appendChild(el);
+            setTimeout(()=>el.remove(), 2000);
+        }
+        setTimeout(()=>{ zone.style.height='0'; }, 2200);
+
+        // Nyalakan bintang progres (opsional — tambahkan logika skor ke session jika perlu)
+        const stars = document.querySelectorAll('.prog-star');
+        stars.forEach((s,i)=>{ s.classList.add('earned'); });
+    })();
+    </script>
+    @endif
 
 </body>
 
