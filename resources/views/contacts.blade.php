@@ -233,7 +233,7 @@
         <script>
             Swal.fire({
             title: 'Hebat!',
-            text: 'Jawabanmu benar, akses terbuka!',
+            text: 'Jawabanmu benar!',
             icon: 'success',
             confirmButtonText: 'Lanjut Belajar',
             confirmButtonColor: '#3B82F6',
