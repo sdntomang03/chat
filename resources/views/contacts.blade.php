@@ -196,10 +196,7 @@
                 </svg>
                 Ruang Diskusi Guru
             </h1>
-            <a href="{{ route('chat.lock_session') }}"
-                class="text-sm font-bold text-red-500 bg-red-50 px-3 py-1 rounded-lg hover:bg-red-100 transition">
-                🔒 Kunci
-            </a>
+
         </div>
 
         <ul class="space-y-3">
