@@ -505,7 +505,7 @@
             <button class="wa-icon-btn" id="emoji-toggle-btn" title="Emoji">&#128522;</button>
 
             <div class="wa-text-wrap">
-                <input type="text" id="message-input" autocomplete="off">
+                <input type="text" id="message-input" placeholder="Pesan" autocomplete="off">
                 <button class="wa-icon-btn" id="attach-btn" style="font-size:20px" title="Kirim foto">&#128247;</button>
                 <input type="file" id="file-input" accept="image/jpeg,image/png,image/gif,image/webp"
                     style="display:none">

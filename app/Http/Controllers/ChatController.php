@@ -100,7 +100,7 @@ class ChatController extends Controller
         }
 
         $authId = Auth::id();
-        $perPage = 1;
+        $perPage = 5;
         $page = (int) $request->query('page', 1);
 
         $query = Message::where(function ($q) use ($authId, $receiver) {
