@@ -121,7 +121,7 @@ class ChatController extends Controller
 
             // Ganti 'admin123' dengan password yang Anda inginkan,
             // atau cek ke database misal: if(!Hash::check($password, Auth::user()->chat_password))
-            if ($password !== 'akudisini') {
+            if ($password !== 'nda') {
                 return response()->json(['error' => 'Unauthorized: Password salah atau kosong'], 401);
             }
             // ------------------------------------------------
